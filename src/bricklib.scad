@@ -31,8 +31,8 @@ BRICK_SIZE_WALL_SPLINE_DEPTH = 0.3;
 // $BRICK_ADJUST_ANTISTUD_SINGLE_D: less is more tight
 // $BRICK_ADJUST_WALLS_SINGLE: less is less tight
 BRICK_PRINTER_ADJUSTMENTS = [
-  ["bambu", 0.24, 0.4, 0.14, -0.1, -0.06, 0, 0], 
-  ["ender", 0.14, 0.4, -0.1, -0.1, 0.1, 0, 0]
+  ["bambu", 0.24, 0.4, 0.14, 0.2, -0.06, -0.1, -0.02], 
+  ["ender", 0.14, 0.4, 0.0, 0.1, 0.1, 0.06, -0.1]
 ];
 
 
