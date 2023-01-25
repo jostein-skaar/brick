@@ -7,7 +7,7 @@ $fn = 32;
 
 // The "correct" math
 BRICK_SIZE_P = 8.0;
-BRICK_SIZE_WALL = 1.2;
+BRICK_SIZE_WALL = 1.5;
 BRICK_SIZE_WALL_SINGLE = 1.5;
 BRICK_SIZE_H = 9.6;
 BRICK_SIZE_h = 3.2;
@@ -49,34 +49,23 @@ BRICK_FLAGS_HOLLOW_ALL_THE_WAY = true;
 BRICK_PRINTER_ADJUSTMENTS = [
   // ["bambu", 0.14, 0.4, 0.14, 0.2, 0.06, -0.1, -0.02, -0.04, 0.3], 
   // ["ender", 0.14, 0.4, 0.06, 0.0, 0.02, 0.06, -0.1, -0.04, 0.3]
-  // Restart calib
-  // // #1
-  // ["bambu", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04, 0.3], 
-  // ["ender", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04, 0.3]
+  // Restart calib 2  
+  // #1
+  // ["bambu", 0.15, 0.4, 0.1, 0.05, 0.0, -0.1, -0.02, -0.01, 0.25, 0.1], 
+  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.01, 0.35, 0.0]
   // #2
-  // ["bambu", 0.1, 0.4, 0.0, 0.05, 0.0, -0.1, -0.1, -0.04, 0.3], 
-  // ["ender", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04, 0.3]
-  // // #3
-  // ["bambu", 0.15, 0.35, 0.0, 0.05, 0.0, -0.1, -0.05, -0.04, 0.3], 
-  // ["ender", 0.15, 0.35, 0.0, 0.05, 0.0, -0.1, -0.05, -0.04, 0.3]
-  // #4
-  // ["bambu", 0.15, 0.35, 0.05, 0.05, 0.0, -0.1, -0.1, -0.04, 0.3], 
-  // ["ender", 0.15, 0.35, 0.05, 0.05, 0.0, -0.1, -0.1, -0.04, 0.3]
-  // #5
-  // ["bambu", 0.15, 0.4, 0.0, 0.05, 0.0, -0.1, 0.0, -0.04, 0.3], 
-  // ["ender", 0.15, 0.4, 0.0, 0.05, 0.0, -0.1, -0.1, -0.04, 0.3]
-  // #6
-  // ["bambu", 0.15, 0.45, 0.1, 0.05, 0.0, -0.1, -0.05, -0.04, 0.3], 
-  // ["ender", 0.15, 0.45, 0.1, 0.05, 0.0, -0.1, -0.1, -0.04, 0.3]
-  // #7
-  // ["bambu", 0.15, 0.45, 0.1, 0.05, 0.0, -0.1, -0.03, -0.04, 0.3, 0.05], 
-  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.04, 0.3, 0.0]
-  // #8
-  // ["bambu", 0.15, 0.4, 0.1, 0.05, 0.0, -0.1, -0.02, -0.04, 0.3, 0.1], 
-  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.04, 0.3, 0.0]
-  // #9
-  ["bambu", 0.15, 0.4, 0.1, 0.05, 0.0, -0.1, -0.02, -0.01, 0.25, 0.1], 
+  // ["bambu", 0.22, 0.4, 0.1, 0.0, 0.0, -0.1, -0.05, -0.01, 0.25, 0.1], 
+  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.01, 0.35, 0.0]
+    // #3
+  // ["bambu", 0.28, 0.4, 0.0, 0.0, 0.0, -0.1, -0.1, -0.01, 0.25, 0.0], 
+  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.01, 0.35, 0.0]
+    // #4
+  // ["bambu", 0.24, 0.4, 0.0, 0.0, 0.0, -0.1, -0.06, -0.01, 0.25, 0.0], 
+  // ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.01, 0.35, 0.0]
+// #5
+  ["bambu", 0.25, 0.4, 0.0, 0.1, 0.2, -0.1, 0.0, -0.01, 0.25, 0.0], 
   ["ender", 0.15, 0.4, 0.05, 0.0, 0.0, -0.1, -0.1, -0.01, 0.35, 0.0]
+
 ];
 
 
@@ -121,7 +110,7 @@ module brick(width, length, height, is_tile=false, is_closed=false, printer="bam
       
       if (!is_single)
       {
-        attach(BOT) BRICK_SPLINES(width, length, height);
+        // attach(BOT) BRICK_SPLINES(width, length, height);
       }    
 
       if (!is_single)
@@ -438,5 +427,6 @@ function BRICK_ADJUSTMENTS_FOR_PRINTER(printer) = BRICK_PRINTER_ADJUSTMENTS[sear
 function BRICK_CALCULATE_PHYSICAL_LENGTH(length) = length * BRICK_SIZE_P - BRICK_SIZE_REDUCER + $BRICK_ADJUST_TOTAL_SIZE;
 function BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(length) = length * BRICK_SIZE_P + $BRICK_ADJUST_TOTAL_SIZE;
 function BRICK_CALCULATE_PHYSICAL_HEIGHT(height) =  height * BRICK_SIZE_H;
+function BRICK_CALCULATE_PHYSICAL_HEIGHT_MASK(height) =  height * BRICK_SIZE_H;
 function BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS(is_single) = is_single ? BRICK_SIZE_WALL_SINGLE + $BRICK_ADJUST_WALLS_SINGLE: BRICK_SIZE_WALL + $BRICK_ADJUST_WALLS;
 function BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height) = height < 1 ? BRICK_SIZE_ROOF_TILE: BRICK_SIZE_ROOF;
