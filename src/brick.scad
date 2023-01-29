@@ -5,25 +5,35 @@ include<brick-printer-adjustments.scad>;
 
 printer = "bambu";
 $brick_printer_adjustments = brick_get_printer_adjustments(printer);
+echo("$brick_printer_adjustments", printer, $brick_printer_adjustments);
 
 width = 2;
 length = 4;
-height = 1;
+height = 2;
 
 brick(width, length, height, printer = printer, anchor = BOT);
 
-left(30) brick(width, length, height, printer = printer, anchor = TOP);
+// left(30) brick(width, length, height, printer = printer, anchor = TOP);
 
-left(70) brick(3, 4, height, printer = printer, anchor = LEFT + FWD + BOT);
+// left(70) brick(3, 4, height, printer = printer, hollow_height = 10, anchor = LEFT + FWD + BOT);
 
-right(20) brick(1, length, height, printer = printer, anchor = BOT);
-right(50) brick(length, 1, height, printer = printer, anchor = BOT);
+// right(20) brick(1, length, height, printer = printer, anchor = BOT);
+// right(20) back(40) brick(1, length, 1 / 3, printer = printer, anchor = BOT);
+// right(30) brick(1, 1, height, printer = printer, anchor = BOT);
+// right(40) brick(1, 1, 1 / 3, printer = printer, anchor = BOT);
+// right(80) brick(length, 1, height, printer = printer, anchor = BOT);
 
-back(50) diff() cyl(d = 30, h = 8)
-{
-  position(TOP) BRICK_STUDS(3, 3);
-  tag("remove") position(BOT) brick_anti(5, 5, 1 / 3);
-};
+// back(50) difference()
+// {
+//   diff() cyl(d = 30, h = BRICK_CALCULATE_PHYSICAL_HEIGHT(1))
+//   {
+//     tag("keep") position(TOP) brick_studs(3, 3);
+//     tag("remove") position(BOT)
+//       cyl(d = 30, h = BRICK_CALCULATE_PHYSICAL_HEIGHT(1) - BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(1), anchor = BOT);
+//     tag("keep") position(BOT) brick_antistuds(6, 6, 1);
+//   }
+//   tube(od = 60, id = 30, h = BRICK_CALCULATE_PHYSICAL_HEIGHT(1));
+// }
 
 // left(16)brick(width, length, height, printer=printer, anchor = BOT);
 // left(16*2)brick(width, length, 2/3, printer=printer, anchor = BOT);

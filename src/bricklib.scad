@@ -35,8 +35,6 @@ BRICK_SIZE_GEARS_PRESSURE_ANGLE = 20;
 BRICK_SIZE_AXLE_WIDTH = 1.83;
 BRICK_SIZE_AXLE_LENGTH = 4.78;
 
-BRICK_FLAGS_HOLLOW_ALL_THE_WAY = true;
-
 // clang-format off
 function brick_get_printer_adjustment(key) = 
   get_printer_adjustment(key, $brick_printer_adjustments);
@@ -60,29 +58,37 @@ function BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height) =
   height < 1 ? BRICK_SIZE_ROOF_TILE : BRICK_SIZE_ROOF;
 // clang-format on
 
-module brick(width, length, height, is_tile = false, is_closed = false, printer = "bambu", anchor = BOT, spin = 0,
-             orient = UP)
+module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, printer = "bambu",
+             anchor = BOT, spin = 0, orient = UP)
 {
   is_single = min(width, length) == 1;
 
+  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
+  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
   physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
   physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
   physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-
   size = [ physical_width, physical_length, physical_height ];
+
+  actual_hollow_height = is_undef(hollow_height) ? min(height, 1) : min(height, hollow_height);
+  physical_hollow_width = physical_width - 2 * physical_wall_thickness;
+  physical_hollow_length = physical_length - 2 * physical_wall_thickness;
+  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
+  hollow_size = [ physical_hollow_width, physical_hollow_length, physical_hollow_height ];
 
   attachable(anchor, spin, orient, size = size)
   {
-    diff()
+    diff() cuboid(size)
     {
-      cuboid(size);
       if (!is_tile)
       {
-        position(TOP) BRICK_STUDS(width, length);
+        tag("keep") position(TOP) brick_studs(width, length);
       }
+
       if (!is_closed)
       {
-        tag("remove") position(BOT) brick_anti(width, length, height);
+        tag("remove") position(BOT) cuboid(hollow_size, anchor = BOT);
+        tag("keep") position(BOT) brick_antistuds(width, length, actual_hollow_height);
       }
     }
 
@@ -90,107 +96,60 @@ module brick(width, length, height, is_tile = false, is_closed = false, printer 
   }
 }
 
-module brick_anti(width, length, height, anchor = BOT, spin = 0, orient = UP)
+module brick_studs(width, length, anchor = BOT, spin = 0, orient = UP)
+{
+  d = BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
+  h = BRICK_SIZE_STUD_H;
+  size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + d, (length - 1) * BRICK_SIZE_STUD_D_TO_D + d, h ];
+
+  attachable(anchor, spin, orient, size = size)
+  {
+    grid_copies(n = [ width, length ], spacing = BRICK_SIZE_STUD_D_TO_D) cyl(d = d, h = h);
+    children();
+  }
+}
+
+module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, spin = 0, orient = UP)
 {
   is_single = min(width, length) == 1;
 
-  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width) - physical_wall_thickness * 2;
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length) - physical_wall_thickness * 2;
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height) - physical_roof_thickness;
-
-  size = [ physical_width, physical_length, physical_height ];
-
-  attachable(anchor, spin, orient, size = size)
-  {
-    difference()
-    {
-      cuboid(size);
-      if (is_single)
-      {
-        BRICK_ANTISTUDS_SINGLEV2(width, length, height);
-      }
-      else
-      {
-        BRICK_ANTISTUDSV2(width, length, height);
-        BRICK_SUPPORT_GRIDV2(width, length, height);
-      }
-    }
-
-    children();
-  }
-}
-
-module BRICK_SUPPORT_GRIDV2(width, length, height)
-{
-  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width) - physical_wall_thickness * 2;
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length) - physical_wall_thickness * 2;
-  physical_height =
-    BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1)) - physical_roof_thickness;
-  od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");
-  id = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");
-  // If we use od we may get "Object may not be a valid 2-manifold and may need repair!""
-  // Using the middle of the anti stud should do it
-  middleD = od - (od - id) / 2;
-
-  difference()
-  {
-    // Support
-    union()
-    {
-      xcopies(n = width - 1, spacing = BRICK_SIZE_STUD_D_TO_D)
-        cuboid([ BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_length, physical_height ]);
-
-      ycopies(n = length - 1, spacing = BRICK_SIZE_STUD_D_TO_D)
-        cuboid([ physical_width, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height ]);
-    }
-
-    // Remove the center so that anti studs remain hollow
-    grid_copies(n = [ width - 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D) cyl(d = middleD, h = physical_height);
-  }
-}
-
-module BRICK_ANTISTUDSV2(width, length, height, is_solid = false)
-{
-  // physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
   roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, 1)) - roof_thickness;
-  od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");
-  id = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");
+  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height) - roof_thickness;
 
-  grid_copies(n = [ width - 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
-    tube(h = physical_height, od = od, id = id);
-}
-
-module BRICK_ANTISTUDS_SINGLEV2(width, length, height)
-{
-  d = BRICK_SIZE_ANTISTUD_SINGLE_D + brick_get_printer_adjustment("antistud_single_d");
-  // physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-  roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, 1)) - roof_thickness;
-  physical_height_support_grid =
-    BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1)) - roof_thickness;
-  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  physical_length_support_grid = BRICK_CALCULATE_PHYSICAL_LENGTH(1) - physical_wall_thickness * 2;
-
-  if (width == 1 && length > 1)
+  if (is_single)
   {
-    grid_copies(n = [ 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+    d = BRICK_SIZE_ANTISTUD_SINGLE_D + brick_get_printer_adjustment("antistud_single_d");
+    physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
+    physical_length_support_grid = BRICK_CALCULATE_PHYSICAL_LENGTH(1) - physical_wall_thickness * 2;
+    actual_spin = width == 1 && length > 1 ? spin : spin + 90;
+    width_or_length = max(width, length);
+
+    size = [ physical_length_support_grid, (width_or_length - 1) * BRICK_SIZE_STUD_D_TO_D + d, physical_height ];
+
+    attachable(anchor, actual_spin, orient, size = size)
     {
-      cyl(d = d, h = physical_height);
-      cuboid([ physical_length_support_grid, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height_support_grid ]);
+      grid_copies(n = [ 1, width_or_length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+      {
+        cyl(d = d, h = physical_height);
+        cuboid([ physical_length_support_grid, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height ]);
+      }
+
+      children();
     }
   }
-  else if (width > 1 && length == 1)
+  else
   {
-    grid_copies(n = [ width - 1, 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+    od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");
+    id = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");
+
+    size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + od, (length - 1) * BRICK_SIZE_STUD_D_TO_D + od, physical_height ];
+
+    attachable(anchor, spin, orient, size = size)
     {
-      cyl(d = d, h = physical_height);
-      cuboid([ BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_length_support_grid, physical_height_support_grid ]);
+      grid_copies(n = [ width - 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+        tube(h = physical_height, od = od, id = id);
+
+      children();
     }
   }
 }
@@ -267,182 +226,6 @@ module brick_box(width, length, height, is_tile = false, is_closed = false, prin
         fwd(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
         back(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
       }
-  }
-}
-
-module BRICK_BLOCK(width, length, height, is_closed = false, anchor = BOT, spin = 0, orient = UP)
-{
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  physical_height_remove = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-
-  size = [ physical_width, physical_length, physical_height ];
-
-  roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-
-  wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  echo("wall_thickness", wall_thickness);
-
-  attachable(anchor, spin, orient, size = size)
-  {
-    diff() cuboid(size)
-    {
-      if (!is_closed)
-      {
-        tag("remove") attach(BOT) cuboid(
-          [
-            physical_width - wall_thickness * 2, physical_length - wall_thickness * 2, physical_height_remove -
-            roof_thickness
-          ],
-          anchor = TOP);
-      }
-    }
-
-    children();
-  }
-}
-
-module BRICK_STUDS(width, length)
-{
-  offset_x = -(width - 1) / 2 * BRICK_SIZE_STUD_D_TO_D;
-  offset_y = -(length - 1) / 2 * BRICK_SIZE_STUD_D_TO_D;
-  translate([ offset_x, offset_y, 0 ])
-  {
-    for (y = [0:length - 1])
-    {
-      for (x = [0:width - 1])
-      {
-        translate([ x * BRICK_SIZE_STUD_D_TO_D, y * BRICK_SIZE_STUD_D_TO_D, 0 ])
-        {
-          // Stud
-          cylinder(d = BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d"), h = BRICK_SIZE_STUD_H);
-        }
-      }
-    }
-  }
-}
-
-module BRICK_SUPPORT_GRID(width, length, height)
-{
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-
-  offset_x = -(width - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-  offset_y = -(length - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-
-  roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-
-  difference()
-  {
-    union()
-    {
-      translate([ offset_x, 0, 0 ])
-      {
-        for (x = [0:width - 2])
-        {
-          translate([ x * BRICK_SIZE_STUD_D_TO_D, 0, 0 ])
-          {
-            cuboid([ BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_length, physical_height ], anchor = TOP);
-          }
-        }
-      }
-
-      translate([ 0, offset_y, 0 ])
-      {
-        for (y = [0:length - 2])
-        {
-          translate([ 0, y * BRICK_SIZE_STUD_D_TO_D, 0 ])
-          {
-            cuboid([ physical_width, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height ], anchor = TOP);
-          }
-        }
-      }
-    }
-
-    BRICK_ANTISTUDS(width, length, height, is_solid = true);
-  }
-}
-
-module BRICK_ANTISTUDS(width, length, height, is_solid = false)
-{
-  offset_x = -(width - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-  offset_y = -(length - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-
-  // physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, 1));
-  roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-
-  translate([ offset_x, offset_y, 0 ])
-  {
-    for (y = [0:length - 2])
-    {
-      for (x = [0:width - 2])
-      {
-        translate([ x * BRICK_SIZE_STUD_D_TO_D, y * BRICK_SIZE_STUD_D_TO_D, 0 ])
-        {
-          // Antistud
-          diff() cylinder(d = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer"),
-                          h = physical_height, anchor = TOP)
-          {
-            if (!is_solid)
-            {
-              tag("remove") attach(TOP) cylinder(d = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d"),
-                                                 h = physical_height - roof_thickness, anchor = TOP);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-module BRICK_ANTISTUDS_SINGLE(width, length, height)
-{
-  offset_x = -(width - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-  offset_y = -(length - 2) / 2 * BRICK_SIZE_STUD_D_TO_D;
-
-  // physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, 1));
-  physical_height_support_grid =
-    BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, BRICK_FLAGS_HOLLOW_ALL_THE_WAY ? height : 1));
-  physical_length_1 = BRICK_CALCULATE_PHYSICAL_LENGTH(1);
-
-  if (width == 1 && length > 1)
-  {
-    translate([ 0, offset_y, 0 ])
-    {
-      x = 0;
-      for (y = [0:length - 2])
-      {
-        translate([ x * BRICK_SIZE_STUD_D_TO_D, y * BRICK_SIZE_STUD_D_TO_D, 0 ])
-        {
-          // Pin
-          cylinder(d = BRICK_SIZE_ANTISTUD_SINGLE_D + brick_get_printer_adjustment("antistud_single_d"),
-                   h = physical_height, anchor = TOP);
-          cuboid([ physical_length_1, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height_support_grid ], anchor = TOP);
-        }
-      }
-    }
-  }
-  else if (width > 1 && length == 1)
-  {
-    translate([ offset_x, 0, 0 ])
-    {
-      y = 0;
-      for (x = [0:width - 2])
-      {
-        translate([ x * BRICK_SIZE_STUD_D_TO_D, y * BRICK_SIZE_STUD_D_TO_D, 0 ])
-        {
-          // Pin
-          cylinder(d = BRICK_SIZE_ANTISTUD_SINGLE_D + brick_get_printer_adjustment("antistud_single_d"),
-                   h = physical_height, anchor = TOP);
-          cuboid([ BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_length_1, physical_height_support_grid ], anchor = TOP);
-        }
-      }
-    }
   }
 }
 

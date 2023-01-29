@@ -4,14 +4,22 @@
 function brick_get_printer_adjustments(printer) =
   printer == "bambu" ? [ 
     [ "stud_d", 0.25 ], 
-    [ "antistud_d", 0.4 ], 
-    [ "antistud_d_outer", 0.0 ], 
-    [ "antistud_single_d", 0.1 ],     
+    [ "antistud_d", 0.3 ], 
+    [ "antistud_d_outer", -0.2 ], 
+    [ "antistud_single_d", 0.2 ],     
     [ "walls", 0.0 ],     
-    [ "total_size", 0.0],
+    [ "total_size", 0.1],
     [ "gears_mod", -0.01 ],
     [ "gears_axle", 0.25 ] ] : 
   printer == "ender" ? [ 
+    [ "stud_d", 0.25 ], 
+    [ "antistud_d", 0.3 ], 
+    [ "antistud_d_outer", -0.1 ], 
+    [ "antistud_single_d", 0.1 ],     
+    [ "walls", -0.1 ],     
+    [ "total_size", 0.0],
+    [ "gears_mod", -0.01 ],
+    [ "gears_axle", 0.35 ] 
    ] : 
   undef;
 // clang-format on
