@@ -8,10 +8,18 @@ $brick_printer_adjustments = brick_get_printer_adjustments(printer);
 echo("$brick_printer_adjustments", printer, $brick_printer_adjustments);
 
 width = 2;
-length = 4;
+length = 20;
 height = 2;
 
-brick(width, length, height, printer = printer, anchor = BOT);
+texture = undef;
+tex_size = [ 10, 10 ];
+tex_scale = 0.5;
+
+brick(width, length, height, texture = texture, tex_size = tex_size, tex_scale = tex_scale, anchor = BOT)
+  show_anchors();
+
+left(30) brick(width, length, height, anchor = CENTER + FWD) show_anchors();
+;
 
 // left(30) brick(width, length, height, printer = printer, anchor = TOP);
 

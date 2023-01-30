@@ -1,5 +1,7 @@
-include<BOSL2\std.scad>;
+// clang-format off
 include<bricklib.scad>;
+include<brick-printer-adjustments.scad>;
+// clang-format on
 
 $fn = 64;
 
@@ -32,46 +34,27 @@ else if (part == "window")
 }
 else if (part == "wall")
 {
-  brick_castle_wall(height = 6, printer = printer);
+  brick_castle_wall(width = 2, length = 8, height = 2);
 }
 else if (part == "wall-top")
 {
-  brick_castle_wall_top(printer = printer);
+  brick_castle_wall_top(width = 2, length = 8, height = 2);
 }
 
-module brick_castle_wall_top(printer)
+module brick_castle_wall_top(width, length, height)
 {
-  width = 2;
-  length = 12;
-  height = 6;
-
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-  physical_length2 = BRICK_CALCULATE_PHYSICAL_LENGTH(2);
-  physical_length_mask2 = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(2);
-  physical_height_minus1 = BRICK_CALCULATE_PHYSICAL_HEIGHT(height - 1);
-
-  startPosFirstTopBrick = physical_length / 2 - physical_length2 / 2;
-
-  BRICK_CASTLE_BRICK_WITH_TEXTURES(width = width, length = length, height = height - 1, printer = printer);
-
-  up(physical_height_minus1)
+  brick(width, length, height - 1, texture = "bricks_vnf", tex_size = [ 10, 10 ], tex_scale = 0.5)
   {
-    fwd(startPosFirstTopBrick)
-      BRICK_CASTLE_BRICK_WITH_TEXTURES(width = width, length = 2, height = 1, printer = printer);
-    fwd(startPosFirstTopBrick - physical_length_mask2 * 2)
-      BRICK_CASTLE_BRICK_WITH_TEXTURES(width = width, length = 2, height = 1, printer = printer);
-    fwd(startPosFirstTopBrick - physical_length_mask2 * 4)
-      BRICK_CASTLE_BRICK_WITH_TEXTURES(width = width, length = 2, height = 1, printer = printer);
-  }
+    position("2x_pos1")
+      brick(width, 2, 1, is_closed = true, texture = "bricks_vnf", tex_size = [ 10, 10 ], tex_scale = 0.5);
+    position("2x_pos3")
+      brick(width, 2, 1, is_closed = true, texture = "bricks_vnf", tex_size = [ 10, 10 ], tex_scale = 0.5, spin = 90);
+  };
 }
 
-module brick_castle_wall(height, printer)
+module brick_castle_wall(width, length, height)
 {
-  width = 2;
-  length = 12;
-  height = 6;
-
-  BRICK_CASTLE_BRICK_WITH_TEXTURES(width = width, length = length, height = height, printer = printer);
+  brick(width, length, height, texture = "bricks_vnf", tex_size = [ 10, 10 ], tex_scale = 0.5);
 }
 
 module BRICK_CASTLE_BRICK_WITH_TEXTURES(width, length, height, printer)

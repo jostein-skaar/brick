@@ -56,10 +56,44 @@ function BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS() =
 
 function BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height) = 
   height < 1 ? BRICK_SIZE_ROOF_TILE : BRICK_SIZE_ROOF;
+
+function brick_create_named_anchors(width, length, height) = let
+  (
+    physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length), 
+    physical_length2 = BRICK_CALCULATE_PHYSICAL_LENGTH(2),
+    physical_length2_mask = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(2),
+    physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height),
+    pos_offset = length/2-1
+  )
+  [
+    named_anchor("2x_pos1", [ 0, pos_offset * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos2", [ 0, (pos_offset-2) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos3", [ 0, (pos_offset-4) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos4", [ 0, (pos_offset-6) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos5", [ 0, (pos_offset-8) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos6", [ 0, (pos_offset-10) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos7", [ 0, (pos_offset-12) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos8", [ 0, (pos_offset-14) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos9", [ 0, (pos_offset-16) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos10", [ 0, (pos_offset-18) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos2", [ 0, (pos_offset-1) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos3", [ 0, (pos_offset-2) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos4", [ 0, (pos_offset-3) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos5", [ 0, (pos_offset-4) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos6", [ 0, (pos_offset-5) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos7", [ 0, (pos_offset-6) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("pos8", [ 0, (pos_offset-7) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    // named_anchor("9os2", [ 0, BRICK_SIZE_STUD_D_TO_D*1, physical_height / 2 ], UP, 0),
+    // named_anchor("pos3", [ 0, -BRICK_SIZE_STUD_D_TO_D*1, physical_height / 2 ], UP, 0),
+    // named_anchor("pos4", [ 0, -BRICK_SIZE_STUD_D_TO_D*3, physical_height / 2 ], UP, 0),
+    // named_anchor("2x-pos2", [ 0, 0, physical_height / 2 ], UP, 0),
+    // named_anchor("2x-pos4", [ 0, -physical_length / 2 + physical_length2 / 2, physical_height / 2 ], UP, 0)
+  ];
+
 // clang-format on
 
-module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, printer = "bambu",
-             anchor = BOT, spin = 0, orient = UP)
+module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, texture = undef,
+             tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
   is_single = min(width, length) == 1;
 
@@ -76,9 +110,11 @@ module brick(width, length, height, is_tile = false, is_closed = false, hollow_h
   physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
   hollow_size = [ physical_hollow_width, physical_hollow_length, physical_hollow_height ];
 
-  attachable(anchor, spin, orient, size = size)
+  anchors = brick_create_named_anchors(width, length, height);
+
+  attachable(anchor, spin, orient, size = size, anchors = anchors)
   {
-    diff() cuboid(size)
+    diff() brick_block(size = size, texture = texture, tex_size = tex_size, tex_scale = tex_scale)
     {
       if (!is_tile)
       {
@@ -90,6 +126,25 @@ module brick(width, length, height, is_tile = false, is_closed = false, hollow_h
         tag("remove") position(BOT) cuboid(hollow_size, anchor = BOT);
         tag("keep") position(BOT) brick_antistuds(width, length, actual_hollow_height);
       }
+    }
+
+    children();
+  }
+}
+
+module brick_block(size, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = CENTER, spin = 0,
+                   orient = UP)
+{
+  attachable(anchor, spin, orient, size = size)
+  {
+    if (is_undef(texture))
+    {
+      cuboid(size);
+    }
+    else
+    {
+      linear_sweep(rect(size), h = size[2], texture = texture, tex_size = tex_size, tex_scale = tex_scale,
+                   tex_inset = true, anchor = CENTER);
     }
 
     children();

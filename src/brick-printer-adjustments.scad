@@ -12,11 +12,11 @@ function brick_get_printer_adjustments(printer) =
     [ "gears_mod", -0.01 ],
     [ "gears_axle", 0.25 ] ] : 
   printer == "ender" ? [ 
-    [ "stud_d", 0.25 ], 
+    [ "stud_d", 0.1 ], 
     [ "antistud_d", 0.3 ], 
-    [ "antistud_d_outer", -0.1 ], 
-    [ "antistud_single_d", 0.1 ],     
-    [ "walls", -0.1 ],     
+    [ "antistud_d_outer", 0.0 ], 
+    [ "antistud_single_d", 0.0 ],     
+    [ "walls", -0.2 ],     
     [ "total_size", 0.0],
     [ "gears_mod", -0.01 ],
     [ "gears_axle", 0.35 ] 
