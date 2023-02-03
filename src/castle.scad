@@ -4,9 +4,11 @@ include<brick-printer-adjustments.scad>;
 // clang-format on
 
 $fn = 64;
+$brick_tightness = BRICK_TIGHTNESS_LOOSE;
 
 printer = "bambu";
-$brick_printer_adjustments = brick_get_printer_adjustments(printer);
+tightness = BRICK_TIGHTNESS_LOOSE;
+$brick_printer_adjustments = brick_get_printer_adjustments(printer, tightness = tightness);
 echo("$brick_printer_adjustments", printer, $brick_printer_adjustments);
 
 BRICK_FLAGS_HOLLOW_ALL_THE_WAY = false;

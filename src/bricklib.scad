@@ -41,11 +41,9 @@ BRICK_TIGHTNESS_LOOSE = -0.05;
 BRICK_TIGHTNESS_DEFAULT = 0.0;
 BRICK_TIGHTNESS_TIGHT = 0.05;
 
-$brick_tightness = BRICK_TIGHTNESS_DEFAULT;
-
 // clang-format off
-function brick_get_printer_adjustment(key, brick_tightness=BRICK_TIGHTNESS_DEFAULT) = 
-  get_printer_adjustment(key, $brick_printer_adjustments) + brick_tightness;
+function brick_get_printer_adjustment(key) = 
+  get_printer_adjustment(key, $brick_printer_adjustments);
 
 function BRICK_CALCULATE_PHYSICAL_LENGTH(length) = 
   length * BRICK_SIZE_P - BRICK_SIZE_REDUCER + brick_get_printer_adjustment("total_size");
@@ -103,7 +101,6 @@ function brick_create_named_anchors(width, length, height) = let
 module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, texture = undef,
              tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
-  echo("$brick_tightness", $brick_tightness);
   is_single = min(width, length) == 1;
 
   physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
@@ -162,8 +159,7 @@ module brick_block(size, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5
 
 module brick_studs(width, length, anchor = BOT, spin = 0, orient = UP)
 {
-  d = BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d", $brick_tightness);
-  echo("brick_studs using d", d);
+  d = BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
   h = BRICK_SIZE_STUD_H;
   size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + d, (length - 1) * BRICK_SIZE_STUD_D_TO_D + d, h ];
 
@@ -185,7 +181,6 @@ module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, sp
   {
     d = BRICK_SIZE_ANTISTUD_SINGLE_D + brick_get_printer_adjustment("antistud_single_d");
     physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-    echo("brick_antistuds is_single using d", d, "and physical_wall_thickness", physical_wall_thickness);
     physical_length_support_grid = BRICK_CALCULATE_PHYSICAL_LENGTH(1) - physical_wall_thickness * 2;
     actual_spin = width == 1 && length > 1 ? spin : spin + 90;
     width_or_length = max(width, length);
@@ -205,9 +200,8 @@ module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, sp
   }
   else
   {
-    od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer", $brick_tightness);
+    od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");
     id = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");
-    echo("brick_antistuds using od", od, "and id", id);
 
     size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + od, (length - 1) * BRICK_SIZE_STUD_D_TO_D + od, physical_height ];
 
