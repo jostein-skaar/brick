@@ -4,6 +4,8 @@ include<common.scad>;
 
 $fn = 32;
 
+// Textures: https://github.com/revarbat/BOSL2/wiki/skin.scad#function-texture
+
 // Dictionary:
 // Spline: The small parts sticking out of the walls to give better grip.
 
@@ -13,6 +15,7 @@ BRICK_SIZE_WALL = 1.5; // Some bricks have 1.2, single and some have 1.5.
 BRICK_SIZE_H = 9.6;
 BRICK_SIZE_h = 3.2;
 BRICK_SIZE_STUD_D = 4.8;
+BRICK_SIZE_STUD_D_MASK = 5.5;
 BRICK_SIZE_STUD_H = 1.8; // 1.7 or 1.8? Seen both numbers.
 BRICK_SIZE_STUD_D_TO_D = 8.0;
 BRICK_SIZE_STUD_SPACING = 3.2;
@@ -56,6 +59,18 @@ function BRICK_CALCULATE_PHYSICAL_HEIGHT(height) =
 
 function BRICK_CALCULATE_PHYSICAL_HEIGHT_MASK(height) = 
   height * BRICK_SIZE_H;
+
+function brick_calculate_adjusted_stud_d() =
+  BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
+
+function brick_calculate_adjusted_stud_d_mask() =
+  BRICK_SIZE_STUD_D_MASK + brick_get_printer_adjustment("stud_d");
+
+function brick_calculate_adjusted_antistud_d() =
+  BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");  
+
+function brick_calculate_adjusted_antistud_d_outer() =
+  BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");  
 
 function BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS() = 
   BRICK_SIZE_WALL + brick_get_printer_adjustment("walls");
@@ -157,20 +172,21 @@ module brick_block(size, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5
   }
 }
 
-module brick_studs(width, length, anchor = BOT, spin = 0, orient = UP)
+module brick_studs(width, length, is_mask = false, inside = undef, anchor = BOT, spin = 0, orient = UP)
 {
-  d = BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
-  h = BRICK_SIZE_STUD_H;
+  d = is_mask ? brick_calculate_adjusted_stud_d_mask() : brick_calculate_adjusted_stud_d();
+  echo("brick_studs d", d, "is_mask", is_mask);
+  h = is_mask ? BRICK_SIZE_STUD_H + 0.5 : BRICK_SIZE_STUD_H;
   size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + d, (length - 1) * BRICK_SIZE_STUD_D_TO_D + d, h ];
 
   attachable(anchor, spin, orient, size = size)
   {
-    grid_copies(n = [ width, length ], spacing = BRICK_SIZE_STUD_D_TO_D) cyl(d = d, h = h);
+    grid_copies(n = [ width, length ], spacing = BRICK_SIZE_STUD_D_TO_D, inside = inside) cyl(d = d, h = h);
     children();
   }
 }
 
-module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, spin = 0, orient = UP)
+module brick_antistuds(width, length, height, inside = undef, is_solid = false, anchor = BOT, spin = 0, orient = UP)
 {
   is_single = min(width, length) == 1;
 
@@ -189,7 +205,7 @@ module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, sp
 
     attachable(anchor, actual_spin, orient, size = size)
     {
-      grid_copies(n = [ 1, width_or_length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+      grid_copies(n = [ 1, width_or_length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D, inside = inside)
       {
         cyl(d = d, h = physical_height);
         cuboid([ physical_length_support_grid, BRICK_SIZE_ANTISTUD_SUPPORT_WIDTH, physical_height ]);
@@ -200,14 +216,15 @@ module brick_antistuds(width, length, height, is_solid = false, anchor = BOT, sp
   }
   else
   {
-    od = BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");
-    id = BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");
+    od = brick_calculate_adjusted_antistud_d_outer();
+    echo("brick_antistuds od", od);
+    id = brick_calculate_adjusted_antistud_d();
 
     size = [ (width - 1) * BRICK_SIZE_STUD_D_TO_D + od, (length - 1) * BRICK_SIZE_STUD_D_TO_D + od, physical_height ];
 
     attachable(anchor, spin, orient, size = size)
     {
-      grid_copies(n = [ width - 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D)
+      grid_copies(n = [ width - 1, length - 1 ], spacing = BRICK_SIZE_STUD_D_TO_D, inside = inside)
         tube(h = physical_height, od = od, id = id);
 
       children();
