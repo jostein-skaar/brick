@@ -113,6 +113,58 @@ function brick_create_named_anchors(width, length, height) = let
 
 // clang-format on
 
+module brick_circle(outer_size, inner_size = 0, height = 1, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5,
+                    anchor = BOT, spin = 0, orient = UP)
+{
+  // TODO: Extract as much as possible to brick_from_shape.
+  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
+  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
+  tower_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
+  outer_d = BRICK_CALCULATE_PHYSICAL_LENGTH(outer_size);
+  inner_d = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(inner_size);
+
+  stud_r = brick_calculate_adjusted_stud_d() / 2;
+  antistud_outer_r = brick_calculate_adjusted_antistud_d_outer() / 2;
+  outer_shape = circle(d = outer_d, $fn = 64);
+  inner_shape = circle(d = inner_d, $fn = 64);
+  shape = inner_size == 0 ? outer_shape : difference(outer_shape, inner_shape);
+  // We need a little outer offset to get rid of any antistuds within antistud_outer_d
+  negative_shape = difference(offset(outer_shape, delta = antistud_outer_r * 2, closed = true), shape);
+  limit_studs_polygon = offset(shape, delta = -stud_r, closed = true);
+  limit_antistuds_polygon = offset(shape, delta = antistud_outer_r, closed = true);
+  shape_for_walls = offset(shape, delta = -physical_wall_thickness, closed = true);
+
+  actual_hollow_height = min(height, 1);
+  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
+
+  // up(1) region(negative_shape);
+  // up(tower_height) region(shape_for_walls);
+
+  // Shape and studs
+  diff() linear_sweep(shape, h = tower_height, texture = texture, tex_size = tex_size, tex_scale = tex_scale,
+                      tex_inset = true)
+  {
+    position(TOP) brick_studs(width = outer_size, length = outer_size, inside = limit_studs_polygon);
+    // position(BOT) brick_antistuds(width = outer_size, length = outer_size, height = 1);
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      linear_sweep(shape_for_walls, h = physical_hollow_height + extra_size_for_better_remove * 2);
+
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      brick_studs(width = outer_size, length = outer_size, is_mask = true);
+  }
+
+  // Antistuds
+  diff() brick_antistuds(width = outer_size, length = outer_size, height = height, inside = limit_antistuds_polygon)
+  {
+
+    // Remove antistuds sticking outside shape
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      linear_sweep(negative_shape, h = tower_height + extra_size_for_better_remove * 2);
+  }
+}
+
+module brick_from_shape(texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP) {}
+
 module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, texture = undef,
              tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
@@ -191,7 +243,7 @@ module brick_antistuds(width, length, height, inside = undef, is_solid = false, 
   is_single = min(width, length) == 1;
 
   roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height) - roof_thickness;
+  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(min(height, 1)) - roof_thickness;
 
   if (is_single)
   {
