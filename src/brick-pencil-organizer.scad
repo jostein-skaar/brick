@@ -5,15 +5,12 @@ include<brick-printer-adjustments.scad>;
 
 printer = "bambu";
 // printer = "mingda";
-tightness = BRICK_TIGHTNESS_LOOSE;
-// tightness = BRICK_TIGHTNESS_TIGHT;
-// tightness = BRICK_TIGHTNESS_DEFAULT;
-$brick_printer_adjustments = brick_get_printer_adjustments(printer, tightness = tightness);
-echo("$brick_printer_adjustments", printer, tightness, $brick_printer_adjustments);
+$brick_printer_adjustments = brick_get_printer_adjustments(printer);
+echo("$brick_printer_adjustments", printer, $brick_printer_adjustments);
 
-width = 8;
-length = 12;
-height = 6;
+width = 4;
+length = 8;
+height = 6; // 3,6,9,12
 is_closed = false;
 
 // texture = "bricks_vnf";

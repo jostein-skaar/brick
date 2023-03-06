@@ -40,81 +40,73 @@ BRICK_SIZE_AXLE_WIDTH = 1.83;
 BRICK_SIZE_AXLE_LENGTH = 4.78;
 
 // Some parts we want to be a bit tighter or more loose.
-// antistud_d and antistud_d_outer are the keys that needs to be overrriden.
 BRICK_TIGHTNESS_LOOSE = -0.05;
 BRICK_TIGHTNESS_DEFAULT = 0.0;
 BRICK_TIGHTNESS_TIGHT = 0.05;
 
-// clang-format off
-function brick_get_printer_adjustment(key) = 
-  get_printer_adjustment(key, $brick_printer_adjustments);
-
-function BRICK_CALCULATE_PHYSICAL_LENGTH(length) = 
-  length * BRICK_SIZE_P - BRICK_SIZE_REDUCER + brick_get_printer_adjustment("total_size");
-
-function BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(length) = 
-  length * BRICK_SIZE_P + brick_get_printer_adjustment("total_size");
-
-function BRICK_CALCULATE_PHYSICAL_HEIGHT(height) = 
-  height * BRICK_SIZE_H;
-
-function BRICK_CALCULATE_PHYSICAL_HEIGHT_MASK(height) = 
-  height * BRICK_SIZE_H;
-
-function brick_calculate_adjusted_stud_d() =
-  BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
-
-function brick_calculate_adjusted_stud_d_mask() =
-  BRICK_SIZE_STUD_D_MASK + brick_get_printer_adjustment("stud_d");
-
-function brick_calculate_adjusted_antistud_d() =
-  BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");  
-
-function brick_calculate_adjusted_antistud_d_outer() =
-  BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");  
-
-function BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS() = 
-  BRICK_SIZE_WALL + brick_get_printer_adjustment("walls");
-
-function BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height) = 
-  height < 1 ? BRICK_SIZE_ROOF_TILE : BRICK_SIZE_ROOF;
-
-function brick_create_named_anchors(width, length, height) = let
-  (
-    physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length), 
-    physical_length2 = BRICK_CALCULATE_PHYSICAL_LENGTH(2),
-    physical_length2_mask = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(2),
-    physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height),
-    pos_offset = length/2-1
-  )
-  [
-    named_anchor("2x_pos1", [ 0, pos_offset * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos2", [ 0, (pos_offset-2) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos3", [ 0, (pos_offset-4) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos4", [ 0, (pos_offset-6) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos5", [ 0, (pos_offset-8) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos6", [ 0, (pos_offset-10) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos7", [ 0, (pos_offset-12) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos8", [ 0, (pos_offset-14) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos9", [ 0, (pos_offset-16) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-    named_anchor("2x_pos10", [ 0, (pos_offset-18) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
-  ];
-
-// clang-format on
-
 module brick_circle(outer_size, inner_size = 0, height = 1, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5,
                     anchor = BOT, spin = 0, orient = UP)
 {
-  // TODO: Extract as much as possible to brick_from_shape.
   outer_d = BRICK_CALCULATE_PHYSICAL_LENGTH(outer_size);
   inner_d = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(inner_size);
+  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
 
-  outer_shape = circle(d = outer_d, $fn = 64);
-  inner_shape = inner_size > 0 ? circle(d = inner_d, $fn = 64) : undef;
+  rgn = inner_size == 0 ? [circle(d = outer_d)] : [ circle(d = outer_d), circle(d = inner_d) ];
+  brick_from_region(rgn = rgn, width = outer_size, length = outer_size, height = height, texture = texture,
+                    tex_size = tex_size, tex_scale = tex_scale, anchor = anchor, spin = spin, orient = orient);
+}
 
-  brick_from_shape(width = outer_size, length = outer_size, height = height, outer_shape = outer_shape,
-                   inner_shape = inner_shape, texture = texture, tex_size = tex_size, tex_scale = tex_scale,
-                   anchor = anchor, spin = spin, orient = orient);
+module brick_from_region(rgn, width, length, height, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5,
+                         anchor = BOT, spin = 0, orient = UP)
+{
+  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
+  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
+  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
+
+  stud_d = brick_calculate_adjusted_stud_d();
+  antistud_outer_d = brick_calculate_adjusted_antistud_d_outer();
+
+  limit_studs_polygon = offset(rgn, delta = -stud_d / 2, closed = true);
+
+  limit_antistuds_polygon = offset(rgn, delta = antistud_outer_d / 2, closed = true);
+  shape_for_walls = offset(rgn, delta = -physical_wall_thickness, closed = true);
+
+  // We need a little outer offset to get rid of any antistuds within antistud_outer_d
+  // Using only the outer shape (rgn[0]) seems to be the right thing to do
+  negative_shape = difference(offset(rgn[0], delta = antistud_outer_d, closed = true), rgn);
+
+  // down(40)
+  // {
+  up(10) color("brown") region(limit_studs_polygon);
+  //   up(5) color("yellow") region(limit_antistuds_polygon);
+  //   color("green") region(shape_for_walls);
+  //   down(5) color("red") region(rgn);
+  //   down(10) color("blue") region(negative_shape);
+  // }
+
+  actual_hollow_height = min(height, 1);
+  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
+
+  // Shape and studs
+  diff() linear_sweep(rgn, h = physical_height, texture = texture, tex_size = tex_size, tex_scale = tex_scale,
+                      tex_inset = true)
+  {
+    position(TOP) brick_studs(width = width, length = length, inside = limit_studs_polygon);
+
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      linear_sweep(shape_for_walls, h = physical_hollow_height + extra_size_for_better_remove * 2);
+
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      brick_studs(width = width, length = length, is_mask = true);
+  }
+
+  // Antistuds
+  diff() brick_antistuds(width = width, length = length, height = height, inside = limit_antistuds_polygon)
+  {
+    // Remove antistuds sticking outside shape
+    tag("remove") down(extra_size_for_better_remove) position(BOT)
+      linear_sweep(negative_shape, h = physical_height + extra_size_for_better_remove * 2);
+  }
 }
 
 module brick_from_shape(width, length, height, outer_shape, inner_shape = undef, texture = undef, tex_size = [ 10, 10 ],
@@ -166,8 +158,9 @@ module brick_from_shape(width, length, height, outer_shape, inner_shape = undef,
   }
 }
 
-module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef, texture = undef,
-             tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
+module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef,
+             limit_studs_polygon = undef, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT,
+             spin = 0, orient = UP)
 {
   is_single = min(width, length) == 1;
 
@@ -182,7 +175,6 @@ module brick(width, length, height, is_tile = false, is_closed = false, hollow_h
   physical_hollow_width = physical_width - 2 * physical_wall_thickness;
   physical_hollow_length = physical_length - 2 * physical_wall_thickness;
   physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
-  hollow_size = [ physical_hollow_width, physical_hollow_length, physical_hollow_height ];
 
   anchors = brick_create_named_anchors(width, length, height);
 
@@ -192,12 +184,14 @@ module brick(width, length, height, is_tile = false, is_closed = false, hollow_h
     {
       if (!is_tile)
       {
-        tag("keep") position(TOP) brick_studs(width, length);
+        tag("keep") position(TOP) brick_studs(width, length, inside = limit_studs_polygon);
       }
 
       if (!is_closed)
       {
-        tag("remove") position(BOT) cuboid(hollow_size, anchor = BOT);
+        tag("remove") down(extra_size_for_better_remove) position(BOT) cuboid(
+          [ physical_hollow_width, physical_hollow_length, physical_hollow_height + extra_size_for_better_remove ],
+          anchor = BOT);
         tag("keep") position(BOT) brick_antistuds(width, length, actual_hollow_height);
       }
     }
@@ -366,3 +360,63 @@ module BRICK_AXLE_HOLE(width, length, height)
   zrot(90)
     cuboid([ width, length, height ], anchor = BOT, rounding = 0.3, edges = [ FWD, BACK ], except = [ TOP, BOT ]);
 }
+
+// clang-format off
+function brick_get_printer_adjustment(key) = 
+  key == "stud_d" ? get_tightness_adjustment() + get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "antistud_d_outer" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "walls" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
+  get_printer_adjustment(key, $brick_printer_adjustments);
+
+function BRICK_CALCULATE_PHYSICAL_LENGTH(length) = 
+  length * BRICK_SIZE_P - BRICK_SIZE_REDUCER + brick_get_printer_adjustment("total_size");
+
+function BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(length) = 
+  length * BRICK_SIZE_P + brick_get_printer_adjustment("total_size");
+
+function BRICK_CALCULATE_PHYSICAL_HEIGHT(height) = 
+  height * BRICK_SIZE_H;
+
+function BRICK_CALCULATE_PHYSICAL_HEIGHT_MASK(height) = 
+  height * BRICK_SIZE_H;
+
+function brick_calculate_adjusted_stud_d() =
+  BRICK_SIZE_STUD_D + brick_get_printer_adjustment("stud_d");
+
+function brick_calculate_adjusted_stud_d_mask() =
+  BRICK_SIZE_STUD_D_MASK + brick_get_printer_adjustment("stud_d");
+
+function brick_calculate_adjusted_antistud_d() =
+  BRICK_SIZE_ANTISTUD_D + brick_get_printer_adjustment("antistud_d");  
+
+function brick_calculate_adjusted_antistud_d_outer() =
+  BRICK_SIZE_ANTISTUD_D_OUTER + brick_get_printer_adjustment("antistud_d_outer");  
+
+function BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS() = 
+  BRICK_SIZE_WALL + brick_get_printer_adjustment("walls");
+
+function BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height) = 
+  height < 1 ? BRICK_SIZE_ROOF_TILE : BRICK_SIZE_ROOF;
+
+function brick_create_named_anchors(width, length, height) = let
+  (
+    physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length), 
+    physical_length2 = BRICK_CALCULATE_PHYSICAL_LENGTH(2),
+    physical_length2_mask = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(2),
+    physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height),
+    pos_offset = length/2-1
+  )
+  [
+    named_anchor("2x_pos1", [ 0, pos_offset * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos2", [ 0, (pos_offset-2) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos3", [ 0, (pos_offset-4) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos4", [ 0, (pos_offset-6) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos5", [ 0, (pos_offset-8) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos6", [ 0, (pos_offset-10) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos7", [ 0, (pos_offset-12) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos8", [ 0, (pos_offset-14) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos9", [ 0, (pos_offset-16) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+    named_anchor("2x_pos10", [ 0, (pos_offset-18) * BRICK_SIZE_STUD_D_TO_D, physical_height / 2 ], UP, 0),
+  ];
+
+// clang-format on
