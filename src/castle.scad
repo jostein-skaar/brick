@@ -35,11 +35,6 @@ else if (part == "tower_window")
 {
   castle_tower_window();
 }
-else if (part == "tower_roof")
-{
-  // TODO: Check
-  castle_tower_roof();
-}
 else if (part == "tower_bottom_inner")
 {
   castle_tower_bottom_inner();
@@ -48,15 +43,9 @@ else if (part == "tower_bottom_outer")
 {
   castle_tower_bottom_outer();
 }
-else if (part == "tower_door")
+else if (part == "tower_roof")
 {
-  // TODO: Check
-  castle_tower_with_door(printer = printer);
-}
-else if (part == "tower_window")
-{
-  // TODO: Check
-  castle_tower_with_window(printer = printer);
+  castle_tower_roof();
 }
 
 module castle_wall(width, length, height)
@@ -87,15 +76,7 @@ module castle_tower_window(printer)
 {
   height = 6;
   outer_size = 8;
-  inner_size = 6;
   tower_outer_size_d = BRICK_CALCULATE_PHYSICAL_LENGTH(outer_size);
-  tower_inner_size_d = BRICK_CALCULATE_PHYSICAL_LENGTH(inner_size);
-
-  // size = 6;
-  // size_ground = 9;
-  // tower_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  // magic_number_to_fit_cyl_to_brick = 3.2; // Just to reduce total size (and cost/weight of filament)
-  // tower_d = BRICK_CALCULATE_PHYSICAL_LENGTH(size_ground) - magic_number_to_fit_cyl_to_brick;
 
   difference()
   {
@@ -201,57 +182,3 @@ module castle_tower_roof()
 
   brick_circle(outer_size = total_size, inner_size = inner_size, height = 1 / 3, is_tile = true);
 }
-
-module castle_BRICK_WITH_TEXTURES(width, length, height, printer)
-{
-  texture_scale = 0.5;
-
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  physical_height1 = BRICK_CALCULATE_PHYSICAL_HEIGHT_MASK(1);
-
-  difference()
-  {
-    linear_sweep(rect([ physical_width, physical_length ]), h = physical_height, texture = "bricks_vnf",
-                 tex_size = [ 10, 10 ], tex_scale = tex_scale, tex_inset = true)
-    {
-      attach(TOP) BRICK_STUDS(width = width, length = length);
-    };
-    cuboid([ physical_width - texture_scale * 2, physical_length - texture_scale * 2, physical_height1 ], anchor = BOT);
-  }
-
-  difference()
-  {
-    brick(width = width, length = length, height = 1, is_tile = true, printer = printer);
-    rect_tube(size = [ physical_width, physical_length ], wall = texture_scale, h = physical_height1, anchor = BOT);
-  }
-}
-
-// brick_box(6, 6, 1, is_tile=true, printer=printer);
-
-// path = cuboid([50,50,50]);
-// linear_sweep(
-//     path, texture="bricks_vnf", tex_size=[10,10],
-//     tex_scale=0.25, h=40);
-
-// tex = texture("bricks_vnf");
-// linear_sweep(
-//     rect(50), texture=tex, h=40,
-//     tex_size=[5,5]
-// );
-
-// module brick_tower_with_door(height, printer)
-// {
-//     size = 6;
-//     size_ground = 9;
-//     tower_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-//     magic_number_to_fit_cyl_to_brick = 3.2; // Just to reduce total size (and cost/weight of filament)
-//     tower_d = BRICK_CALCULATE_PHYSICAL_LENGTH(size_ground)-magic_number_to_fit_cyl_to_brick;
-
-//     difference()
-//     {
-//         brick_tower(height=height, printer=printer);
-//         fwd(tower_d/4) BRICK_TOWER_WINDOW(tower_d, is_mask=true, is_door=true);
-//     }
-// }
