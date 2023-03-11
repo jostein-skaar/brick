@@ -5,10 +5,9 @@ include<brick-printer-adjustments.scad>;
 
 printer = "bambu";
 // printer = "mingda";
-// tightness = BRICK_TIGHTNESS_LOOSE;
-tightness = BRICK_TIGHTNESS_DEFAULT;
-$brick_printer_adjustments = brick_get_printer_adjustments(printer, tightness = tightness);
-echo("$brick_printer_adjustments", printer, tightness, $brick_printer_adjustments);
+
+$brick_printer_adjustments = brick_get_printer_adjustments(printer);
+echo("$brick_printer_adjustments", printer, $brick_printer_adjustments);
 
 // width = 2;
 // length = 6;

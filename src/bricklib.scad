@@ -44,20 +44,21 @@ BRICK_TIGHTNESS_LOOSE = -0.05;
 BRICK_TIGHTNESS_DEFAULT = 0.0;
 BRICK_TIGHTNESS_TIGHT = 0.05;
 
-module brick_circle(outer_size, inner_size = 0, height = 1, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5,
-                    anchor = BOT, spin = 0, orient = UP)
+module brick_circle(outer_size, inner_size = 0, height = 1, hollow_height = undef, is_tile = false, texture = undef,
+                    tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
   outer_d = BRICK_CALCULATE_PHYSICAL_LENGTH(outer_size);
   inner_d = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(inner_size);
   physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
 
   rgn = inner_size == 0 ? [circle(d = outer_d)] : [ circle(d = outer_d), circle(d = inner_d) ];
-  brick_from_region(rgn = rgn, width = outer_size, length = outer_size, height = height, texture = texture,
-                    tex_size = tex_size, tex_scale = tex_scale, anchor = anchor, spin = spin, orient = orient);
+  brick_from_region(rgn = rgn, width = outer_size, length = outer_size, height = height, hollow_height = hollow_height,
+                    is_tile = is_tile, texture = texture, tex_size = tex_size, tex_scale = tex_scale, anchor = anchor,
+                    spin = spin, orient = orient);
 }
 
-module brick_from_region(rgn, width, length, height, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5,
-                         anchor = BOT, spin = 0, orient = UP)
+module brick_from_region(rgn, width, length, height, hollow_height = undef, is_tile = false, texture = undef,
+                         tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
   physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
   physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
@@ -66,7 +67,10 @@ module brick_from_region(rgn, width, length, height, texture = undef, tex_size =
   stud_d = brick_calculate_adjusted_stud_d();
   antistud_outer_d = brick_calculate_adjusted_antistud_d_outer();
 
-  limit_studs_polygon = offset(rgn, delta = -stud_d / 2, closed = true);
+  if (!is_tile)
+  {
+    limit_studs_polygon = offset(rgn, delta = -stud_d / 2, closed = true);
+  }
 
   limit_antistuds_polygon = offset(rgn, delta = antistud_outer_d / 2, closed = true);
   shape_for_walls = offset(rgn, delta = -physical_wall_thickness, closed = true);
@@ -77,31 +81,34 @@ module brick_from_region(rgn, width, length, height, texture = undef, tex_size =
 
   // down(40)
   // {
-  up(10) color("brown") region(limit_studs_polygon);
+  // up(10) color("brown") region(limit_studs_polygon);
   //   up(5) color("yellow") region(limit_antistuds_polygon);
   //   color("green") region(shape_for_walls);
   //   down(5) color("red") region(rgn);
   //   down(10) color("blue") region(negative_shape);
   // }
 
-  actual_hollow_height = min(height, 1);
+  actual_hollow_height = is_undef(hollow_height) ? min(height, 1) : min(height, hollow_height);
   physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
 
   // Shape and studs
   diff() linear_sweep(rgn, h = physical_height, texture = texture, tex_size = tex_size, tex_scale = tex_scale,
                       tex_inset = true)
   {
-    position(TOP) brick_studs(width = width, length = length, inside = limit_studs_polygon);
+    if (!is_tile)
+    {
+      position(TOP) brick_studs(width = width, length = length, inside = limit_studs_polygon);
+    }
 
     tag("remove") down(extra_size_for_better_remove) position(BOT)
       linear_sweep(shape_for_walls, h = physical_hollow_height + extra_size_for_better_remove * 2);
-
     tag("remove") down(extra_size_for_better_remove) position(BOT)
       brick_studs(width = width, length = length, is_mask = true);
   }
 
   // Antistuds
-  diff() brick_antistuds(width = width, length = length, height = height, inside = limit_antistuds_polygon)
+  diff()
+    brick_antistuds(width = width, length = length, height = actual_hollow_height, inside = limit_antistuds_polygon)
   {
     // Remove antistuds sticking outside shape
     tag("remove") down(extra_size_for_better_remove) position(BOT)
@@ -109,6 +116,7 @@ module brick_from_region(rgn, width, length, height, texture = undef, tex_size =
   }
 }
 
+// Obsolete?
 module brick_from_shape(width, length, height, outer_shape, inner_shape = undef, texture = undef, tex_size = [ 10, 10 ],
                         tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
@@ -279,6 +287,7 @@ module brick_antistuds(width, length, height, inside = undef, is_solid = false, 
   }
 }
 
+// Obsolete?
 module brick_box(width, length, height, is_tile = false, is_closed = false, printer = "bambu", anchor = BOT)
 {
   thickness = 1; // This would be width if regular brick.
