@@ -7,13 +7,3 @@ openscad -D "teeth=28;printer=""bambu""" -o ../stl/gear/gear-28-bambu.stl gear.s
 openscad -D "teeth=32;printer=""bambu""" -o ../stl/gear/gear-32-bambu.stl gear.scad
 openscad -D "teeth=36;printer=""bambu""" -o ../stl/gear/gear-36-bambu.stl gear.scad
 openscad -D "teeth=40;printer=""bambu""" -o ../stl/gear/gear-40-bambu.stl gear.scad
-
-openscad -D "teeth=8;clearance=-0.2;extra_adjust_axle=-0.06;printer=""ender""" -o ../stl/gear/ender/gear-08-ender.stl gear.scad
-openscad -D "teeth=12;extra_adjust_axle=-0.05;printer=""ender""" -o ../stl/gear/ender/gear-12-ender.stl gear.scad
-openscad -D "teeth=16;extra_adjust_axle=0.03;printer=""ender""" -o ../stl/gear/ender/gear-16-ender.stl gear.scad
-openscad -D "teeth=20;printer=""ender""" -o ../stl/gear/ender/gear-20-ender.stl gear.scad
-openscad -D "teeth=24;extra_adjust_axle=-0.03;printer=""ender""" -o ../stl/gear/gear-24-ender.stl gear.scad
-openscad -D "teeth=28;printer=""ender""" -o ../stl/gear/ender/gear-28-ender.stl gear.scad
-openscad -D "teeth=32;printer=""ender""" -o ../stl/gear/ender/gear-32-ender.stl gear.scad
-openscad -D "teeth=36;printer=""ender""" -o ../stl/gear/ender/gear-36-ender.stl gear.scad
-openscad -D "teeth=40;printer=""ender""" -o ../stl/gear/ender/gear-40-ender.stl gear.scad

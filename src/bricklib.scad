@@ -1,5 +1,6 @@
 // clang-format off
 include<common.scad>;
+include<BOSL2\gears.scad>;
 // clang-format on
 
 $fn = 32;
@@ -43,6 +44,48 @@ BRICK_SIZE_AXLE_LENGTH = 4.78;
 BRICK_TIGHTNESS_LOOSE = -0.05;
 BRICK_TIGHTNESS_DEFAULT = 0.0;
 BRICK_TIGHTNESS_TIGHT = 0.05;
+
+module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef,
+             limit_studs_polygon = undef, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT,
+             spin = 0, orient = UP)
+{
+  is_single = min(width, length) == 1;
+
+  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
+  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
+  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
+  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
+  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
+  size = [ physical_width, physical_length, physical_height ];
+
+  actual_hollow_height = is_undef(hollow_height) ? min(height, 1) : min(height, hollow_height);
+  physical_hollow_width = physical_width - 2 * physical_wall_thickness;
+  physical_hollow_length = physical_length - 2 * physical_wall_thickness;
+  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
+
+  anchors = brick_create_named_anchors(width, length, height);
+
+  attachable(anchor, spin, orient, size = size, anchors = anchors)
+  {
+    diff() brick_block(size = size, texture = texture, tex_size = tex_size, tex_scale = tex_scale)
+    {
+      if (!is_tile)
+      {
+        tag("keep") position(TOP) brick_studs(width, length, inside = limit_studs_polygon);
+      }
+
+      if (!is_closed)
+      {
+        tag("remove") down(extra_size_for_better_remove) position(BOT) cuboid(
+          [ physical_hollow_width, physical_hollow_length, physical_hollow_height + extra_size_for_better_remove ],
+          anchor = BOT);
+        tag("keep") position(BOT) brick_antistuds(width, length, actual_hollow_height);
+      }
+    }
+
+    children();
+  }
+}
 
 module brick_circle(outer_size, inner_size = 0, height = 1, hollow_height = undef, is_tile = false, texture = undef,
                     tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
@@ -110,98 +153,6 @@ module brick_from_region(rgn, width, length, height, hollow_height = undef, is_t
     // Remove antistuds sticking outside shape
     tag("remove") down(extra_size_for_better_remove) position(BOT)
       linear_sweep(negative_shape, h = physical_height + extra_size_for_better_remove * 2);
-  }
-}
-
-// Obsolete?
-module brick_from_shape(width, length, height, outer_shape, inner_shape = undef, texture = undef, tex_size = [ 10, 10 ],
-                        tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
-{
-  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-
-  stud_d = brick_calculate_adjusted_stud_d();
-  antistud_outer_d = brick_calculate_adjusted_antistud_d_outer();
-
-  shape = is_undef(inner_shape) ? outer_shape : difference(outer_shape, inner_shape);
-
-  // We need a little outer offset to get rid of any antistuds within antistud_outer_d
-  negative_shape = difference(offset(outer_shape, delta = antistud_outer_d, closed = true), shape);
-  limit_studs_polygon = offset(shape, delta = -stud_d / 2, closed = true);
-  limit_antistuds_polygon = offset(shape, delta = antistud_outer_d / 2, closed = true);
-  shape_for_walls = offset(shape, delta = -physical_wall_thickness, closed = true);
-
-  actual_hollow_height = min(height, 1);
-  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
-
-  // up(physical_height + 1) color("red") region(limit_studs_polygon);
-  // up(physical_height) region(shape_for_walls);
-
-  // rgn = [ circle(d = 100), star(n = 5, step = 2, d = 100, spin = 90) ];
-  // up(physical_height + 1) color("red") region(rgn);
-
-  // Shape and studs
-  diff() linear_sweep(shape, h = physical_height, texture = texture, tex_size = tex_size, tex_scale = tex_scale,
-                      tex_inset = true)
-  {
-    position(TOP) brick_studs(width = width, length = length, inside = limit_studs_polygon);
-
-    tag("remove") down(extra_size_for_better_remove) position(BOT)
-      linear_sweep(shape_for_walls, h = physical_hollow_height + extra_size_for_better_remove * 2);
-
-    tag("remove") down(extra_size_for_better_remove) position(BOT)
-      brick_studs(width = width, length = length, is_mask = true);
-  }
-
-  // Antistuds
-  diff() brick_antistuds(width = width, length = length, height = height, inside = limit_antistuds_polygon)
-  {
-    // Remove antistuds sticking outside shape
-    tag("remove") down(extra_size_for_better_remove) position(BOT)
-      linear_sweep(negative_shape, h = physical_height + extra_size_for_better_remove * 2);
-  }
-}
-
-module brick(width, length, height, is_tile = false, is_closed = false, hollow_height = undef,
-             limit_studs_polygon = undef, texture = undef, tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT,
-             spin = 0, orient = UP)
-{
-  is_single = min(width, length) == 1;
-
-  physical_wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  physical_roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-  physical_width = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
-  physical_length = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-  physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  size = [ physical_width, physical_length, physical_height ];
-
-  actual_hollow_height = is_undef(hollow_height) ? min(height, 1) : min(height, hollow_height);
-  physical_hollow_width = physical_width - 2 * physical_wall_thickness;
-  physical_hollow_length = physical_length - 2 * physical_wall_thickness;
-  physical_hollow_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(actual_hollow_height) - physical_roof_thickness;
-
-  anchors = brick_create_named_anchors(width, length, height);
-
-  attachable(anchor, spin, orient, size = size, anchors = anchors)
-  {
-    diff() brick_block(size = size, texture = texture, tex_size = tex_size, tex_scale = tex_scale)
-    {
-      if (!is_tile)
-      {
-        tag("keep") position(TOP) brick_studs(width, length, inside = limit_studs_polygon);
-      }
-
-      if (!is_closed)
-      {
-        tag("remove") down(extra_size_for_better_remove) position(BOT) cuboid(
-          [ physical_hollow_width, physical_hollow_length, physical_hollow_height + extra_size_for_better_remove ],
-          anchor = BOT);
-        tag("keep") position(BOT) brick_antistuds(width, length, actual_hollow_height);
-      }
-    }
-
-    children();
   }
 }
 
@@ -284,87 +235,47 @@ module brick_antistuds(width, length, height, inside = undef, is_solid = false, 
   }
 }
 
-// Obsolete?
-module brick_box(width, length, height, is_tile = false, is_closed = false, printer = "bambu", anchor = BOT)
+module brick_box(width, length, height, is_tile = false, is_closed = false, anchor = BOT)
 {
-  thickness = 1; // This would be width if regular brick.
-
-  lw = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
-  ll = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
-  lt = BRICK_CALCULATE_PHYSICAL_LENGTH(thickness);
-  lh = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  offset_x = lw / 2 - lt / 2;
-  offset_y = ll / 2 - lt / 2;
-
-  roof_thickness = BRICK_CALCULATE_PHYSICAL_ROOF_THICKNESS(height);
-
-  wall_thickness = BRICK_CALCULATE_PHYSICAL_WALL_THICKNESS();
-  magic_number_to_make_sure_we_erase_wall = 0.1;
-  offset_thickness = lt / 2 - wall_thickness / 2;
-
-  wall_thickness_to_erase = wall_thickness + magic_number_to_make_sure_we_erase_wall;
-  wall_length_to_erase = lt - wall_thickness * 2;
-  wall_height_to_erase = lh - roof_thickness;
-
-  // Width part 1
-  difference()
-  {
-    fwd(offset_y)
-      brick(width, thickness, height, is_tile = is_tile, is_closed = is_closed, printer = printer, anchor = anchor);
-
-    if (!is_closed)
-      fwd(offset_y - offset_thickness)
-      {
-        left(offset_x) cube([ wall_length_to_erase, wall_thickness_to_erase, wall_height_to_erase ], anchor = anchor);
-        right(offset_x) cube([ wall_length_to_erase, wall_thickness_to_erase, wall_height_to_erase ], anchor = anchor);
-      }
-  }
-
-  // Width part 2
-  difference()
-  {
-    back(offset_y)
-      brick(width, thickness, height, is_tile = is_tile, is_closed = is_closed, printer = printer, anchor = anchor);
-    if (!is_closed)
-      back(offset_y - offset_thickness)
-      {
-        left(offset_x) cube([ wall_length_to_erase, wall_thickness_to_erase, wall_height_to_erase ], anchor = anchor);
-        right(offset_x) cube([ wall_length_to_erase, wall_thickness_to_erase, wall_height_to_erase ], anchor = anchor);
-      }
-  }
-
-  // Length part 1
-  difference()
-  {
-    right(offset_x)
-      brick(thickness, length, height, is_tile = is_tile, is_closed = is_closed, printer = printer, anchor = anchor);
-    if (!is_closed)
-      right(offset_x - offset_thickness)
-      {
-        fwd(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
-        back(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
-      }
-  }
-
-  // Length part 2
-  difference()
-  {
-    left(offset_x)
-      brick(thickness, length, height, is_tile = is_tile, is_closed = is_closed, printer = printer, anchor = anchor);
-    if (!is_closed)
-      left(offset_x - offset_thickness)
-      {
-        fwd(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
-        back(offset_y) cube([ wall_thickness_to_erase, wall_length_to_erase, wall_height_to_erase ], anchor = anchor);
-      }
-  }
+  // TODO?
 }
 
-module BRICK_AXLE_HOLE(width, length, height)
+module brick_gear(teeth, clearance = 0.0)
 {
-  cuboid([ width, length, height ], anchor = BOT, rounding = 0.3, edges = [ FWD, BACK ], except = [ TOP, BOT ]);
-  zrot(90)
-    cuboid([ width, length, height ], anchor = BOT, rounding = 0.3, edges = [ FWD, BACK ], except = [ TOP, BOT ]);
+  $fn = 64;
+
+  actual_mod = BRICK_SIZE_GEARS_MOD + brick_get_printer_adjustment("gears_mod");
+  actual_axle_width = BRICK_SIZE_AXLE_WIDTH + brick_get_printer_adjustment("gears_axle");
+  actual_axle_length = BRICK_SIZE_AXLE_LENGTH + brick_get_printer_adjustment("gears_axle");
+
+  thickness = BRICK_CALCULATE_PHYSICAL_LENGTH(1);
+  pressure_angle = BRICK_SIZE_GEARS_PRESSURE_ANGLE;
+  shaft_diam = 0;
+  text_height = 0.4;
+
+  pr = pitch_radius(mod = BRICK_SIZE_GEARS_MOD, teeth = teeth);
+  actual_pr = pitch_radius(mod = actual_mod, teeth = teeth);
+  echo("pitch_radius (original vs actual) for teeth=", teeth, pr, actual_pr);
+
+  difference()
+  {
+    spur_gear(mod = actual_mod, teeth = teeth, thickness = thickness, shaft_diam = shaft_diam,
+              pressure_angle = pressure_angle, clearance = clearance, anchor = BOT);
+
+    // Hole for axle
+    cuboid([ actual_axle_width, actual_axle_length, thickness ], anchor = BOT, rounding = 0.3, edges = [ FWD, BACK ],
+           except = [ TOP, BOT ]);
+    zrot(90) cuboid([ actual_axle_width, actual_axle_length, thickness ], anchor = BOT, rounding = 0.3,
+                    edges = [ FWD, BACK ], except = [ TOP, BOT ]);
+
+    // Add text with teeth number if many teeth (no room when few)
+    if (teeth > 15)
+    {
+      fwd(actual_axle_width + 0.7 + teeth / 10) up(thickness - text_height) linear_extrude(height = text_height)
+        text(str(teeth), size = 3.4, font = "Liberation Sans:style=Bold", halign = "center", valign = "center",
+             spacing = 1, $fn = 16);
+    }
+  }
 }
 
 // clang-format off
@@ -372,6 +283,7 @@ function brick_get_printer_adjustment(key) =
   key == "stud_d" ? get_tightness_adjustment() + get_printer_adjustment(key, $brick_printer_adjustments) :
   key == "antistud_d_outer" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
   key == "walls" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "gears_axle" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
   get_printer_adjustment(key, $brick_printer_adjustments);
 
 function BRICK_CALCULATE_PHYSICAL_LENGTH(length) = 
