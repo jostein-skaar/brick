@@ -67,10 +67,7 @@ module brick_from_region(rgn, width, length, height, hollow_height = undef, is_t
   stud_d = brick_calculate_adjusted_stud_d();
   antistud_outer_d = brick_calculate_adjusted_antistud_d_outer();
 
-  if (!is_tile)
-  {
-    limit_studs_polygon = offset(rgn, delta = -stud_d / 2, closed = true);
-  }
+  limit_studs_polygon = offset(rgn, delta = -stud_d / 2, closed = true);
 
   limit_antistuds_polygon = offset(rgn, delta = antistud_outer_d / 2, closed = true);
   shape_for_walls = offset(rgn, delta = -physical_wall_thickness, closed = true);
