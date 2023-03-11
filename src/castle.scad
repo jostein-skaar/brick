@@ -15,7 +15,7 @@ texture = "bricks_vnf";
 tex_size = [ 10, 10 ];
 tex_scale = 0.5;
 
-part = "tower_window";
+part = "tower_roof";
 
 echo(part, printer);
 
@@ -164,21 +164,21 @@ module castle_tower_roof()
   tower_inner_size_d1 = BRICK_CALCULATE_PHYSICAL_LENGTH(inner_size);
 
   physical_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);
-  physical_height_033 = BRICK_CALCULATE_PHYSICAL_HEIGHT(1 / 3);
+  physical_height_1 = BRICK_CALCULATE_PHYSICAL_HEIGHT(1 / 2);
 
   // It seems like the cyl is pushed down a bit when using tex_inset=true.
   // So it seems better to use tex_inset=false and instead make the diameter smaller.
   // This is to prevent that the texture add to the size of the cyl.
-  diff() cyl(h = physical_height, d1 = tower_total_size_d1 - tex_scale * 2, d2 = tower_d2, anchor = BOT,
-             texture = texture, tex_size = tex_size, tex_scale = tex_scale, tex_inset = false, tex_style = "concave")
+  up(physical_height_1) diff()
+    cyl(h = physical_height - physical_height_1, d1 = tower_total_size_d1 - tex_scale * 2, d2 = tower_d2, anchor = BOT,
+        texture = texture, tex_size = tex_size, tex_scale = tex_scale, tex_inset = false, tex_style = "concave")
   {
     attach(TOP) brick_studs(width = 1, length = 1, $tightness = BRICK_TIGHTNESS_TIGHT);
 
-    tag("remove") up(physical_height_033) position(BOT)
-      cyl(h = physical_height - physical_height_033, d1 = tower_inner_size_d1, d2 = 0, anchor = BOT);
-
-    tag("remove") position(BOT) cyl(h = physical_height_033, d = tower_total_size_d1, anchor = BOT);
+#tag("remove") position(BOT)
+    cyl(h = physical_height - physical_height_1, d1 = tower_inner_size_d1, d2 = 0, anchor = BOT);
   }
 
-  brick_circle(outer_size = total_size, inner_size = inner_size, height = 1 / 3, is_tile = true);
+  brick_circle(outer_size = total_size, inner_size = inner_size, height = 1 / 2, is_tile = true, texture = texture,
+               tex_size = tex_size, tex_scale = tex_scale);
 }
