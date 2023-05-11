@@ -13,24 +13,6 @@ length = 4;
 height = 3; // 3,6,9,12
 
 texture = "diamonds_vnf";
-// texture = [
-//   [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-//   [ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
-//   [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1 ],
-//   [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1 ],
-//   [ 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1 ],
-//   [ 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1 ],
-//   [ 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1 ],
-//   [ 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1 ],
-//   [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-//   [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-//   [ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
-//   [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-// ];
-// texture = undef;
-// ribs, trunc_ribs, trunc_ribs_vnf, wave_ribs, diamonds, diamonds_vnf, pyramids, pyramids_vnf
-// trunc_pyramids, trunc_pyramids_vnf, hills, bricks, bricks_vnf, checkers, cones, cubes
-// trunc_diamonds, dimples, dots, tri_grid, hex_grid, rough
 tex_scale = 0.5;
 
 tube_height = BRICK_CALCULATE_PHYSICAL_HEIGHT(height);

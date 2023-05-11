@@ -100,6 +100,21 @@ module brick_circle(outer_size, inner_size = 0, height = 1, hollow_height = unde
                     spin = spin, orient = orient);
 }
 
+module brick_box(width, length, height, hollow_height = undef, is_tile = false, texture = undef, tex_size = [ 10, 10 ],
+                 tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
+{
+  physical_size_x = BRICK_CALCULATE_PHYSICAL_LENGTH(width);
+  physical_size_y = BRICK_CALCULATE_PHYSICAL_LENGTH(length);
+  physical_size_inner_x = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(width - 2);
+  physical_size_inner_y = BRICK_CALCULATE_PHYSICAL_LENGTH_MASK(length - 2);
+
+  rgn = [
+    rect(size = [ physical_size_x, physical_size_y ]), rect(size = [ physical_size_inner_x, physical_size_inner_y ])
+  ];
+  brick_from_region(rgn, width + 2, length + 2, height = height, hollow_height = hollow_height, is_tile = is_tile,
+                    texture = texture, tex_size = tex_size, tex_scale = tex_scale);
+}
+
 module brick_from_region(rgn, width, length, height, hollow_height = undef, is_tile = false, texture = undef,
                          tex_size = [ 10, 10 ], tex_scale = 0.5, anchor = BOT, spin = 0, orient = UP)
 {
@@ -117,8 +132,11 @@ module brick_from_region(rgn, width, length, height, hollow_height = undef, is_t
 
   // We need a little outer offset to get rid of any antistuds within antistud_outer_d
   // Using only the outer shape (rgn[0]) seems to be the right thing to do
-  negative_shape = difference(offset(rgn[0], delta = antistud_outer_d, closed = true), rgn);
+  // rgn_adjusted_for_texture_inset is to get rid of teh antistuds sticking out of the texture
+  rgn_adjusted_for_texture_inset = offset(rgn, delta = -tex_scale, closed = true);
+  negative_shape = difference(offset(rgn[0], delta = antistud_outer_d, closed = true), rgn_adjusted_for_texture_inset);
 
+  // !region(negative_shape);
   // down(40)
   // {
   // up(10) color("brown") region(limit_studs_polygon);
@@ -233,11 +251,6 @@ module brick_antistuds(width, length, height, inside = undef, is_solid = false, 
       children();
     }
   }
-}
-
-module brick_box(width, length, height, is_tile = false, is_closed = false, anchor = BOT)
-{
-  // TODO?
 }
 
 module brick_gear(teeth, clearance = 0.0)
