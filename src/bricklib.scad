@@ -296,6 +296,9 @@ function brick_get_printer_adjustment(key) =
   key == "stud_d" ? get_tightness_adjustment() + get_printer_adjustment(key, $brick_printer_adjustments) :
   key == "antistud_d_outer" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
   key == "walls" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "big_stud_d" ? get_tightness_adjustment() + get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "big_antistud_d_outer" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
+  key == "big_walls" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
   key == "gears_axle" ? get_tightness_adjustment() +  get_printer_adjustment(key, $brick_printer_adjustments) :
   get_printer_adjustment(key, $brick_printer_adjustments);
 
